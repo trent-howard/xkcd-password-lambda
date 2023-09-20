@@ -1,15 +1,15 @@
 # xkcd password generator
 
-![xkcd password strength comic](https://imgs.xkcd.com/comics/password_strength.png)
-
 This is just a little toy app I built to learn a little about [AWS CDK](https://docs.aws.amazon.com/cdk/) which creates
 
-- a lambda function that returns a password (inspired by [xkcd](https://xkcd.com/936/))
+- a lambda function that returns a password (inspired by the [xkcd](https://xkcd.com/936/) comic)
 - an API gateway
 - a usage plan with an API key
 - a route with query param validation
 
 I built the lambda handler with Go just because I never had before.
+
+![xkcd password strength comic](https://imgs.xkcd.com/comics/password_strength.png)
 
 ## Instructions
 
@@ -41,7 +41,8 @@ Once it's up and running you can make `GET` requests to the `/password` endpoint
 ```bash
 curl -H "Content-Type: application/json" \
      -H "x-api-key: wifeless-opossum-jiffy-liverwurst-hygienist" \
-     https://[appid].execute-api.[region].amazonaws.com/prod/password?length=8
+     "https://[appid].execute-api.[region].amazonaws.com/prod/password?length=8"
+{"password":"jaguar-janitor-zodiac-enunciate-sniff-feigned-cactus-imitator"}%
 ```
 
 ### Should I use this?
