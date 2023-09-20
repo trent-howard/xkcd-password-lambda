@@ -47,5 +47,5 @@ curl -H "Content-Type: application/json" \
 
 ### Should I use this?
 
-Probably not - your password manager - which we're all definitely using by now, right guys? - probably has a better generator built in. If you were thinking of deploying this or basing your own stack off of it you might want to set rate limiting and throttling on your usage plan.
+Probably not. Your password manager - which we're all definitely using by now, right guys? - probably has a better generator built in. If you were thinking of deploying this or basing your own stack off of it you might want to set rate limiting and throttling on your usage plan.
 
