@@ -1,14 +1,50 @@
-# Welcome to your CDK TypeScript project
+# xkcd password generator
 
-This is a blank project for CDK development with TypeScript.
+![xkcd password strength comic](https://imgs.xkcd.com/comics/password_strength.png)
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+This is just a little toy app I built to learn a little about [AWS CDK](https://docs.aws.amazon.com/cdk/) which creates
 
-## Useful commands
+- a lambda function that returns a password (inspired by [xkcd](https://xkcd.com/936/))
+- an API gateway
+- a usage plan with an API key
+- a route with query param validation
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+I built the lambda handler with Go just because I never had before.
+
+## Instructions
+
+You'll need reasonably recent versions of node and npm installed, as well as Go to build the lambda handler.
+
+Be sure to have installed and configured/authenticated [`aws cli`](https://aws.amazon.com/cli/) and `cdk` too.
+
+Install dependencies
+
+```bash
+npm install
+```
+
+Copy the `.env.template` to `.env` and update the variables inside. `API_KEY` needs to be **at least 20 characters** long.
+
+Compile the handler and deploy the stack with
+
+```bash
+npm run deploy
+```
+
+If you want to tear it all down run
+
+```bash
+npm run destroy
+```
+
+Once it's up and running you can make `GET` requests to the `/password` endpoint. Optionally provide a `length` param to request how many words are returned - it defaults to 5 if nothing is provided.
+```bash
+curl -H "Content-Type: application/json" \
+     -H "x-api-key: wifeless-opossum-jiffy-liverwurst-hygienist" \
+     https://[appid].execute-api.[region].amazonaws.com/prod/password?length=8
+```
+
+### Should I use this?
+
+Probably not - your password manager - which we're all definitely using by now, right guys? - probably has a better generator built in. If you were thinking of deploying this or basing your own stack off of it you might want to set rate limiting and throttling on your usage plan.
+
