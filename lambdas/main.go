@@ -24,7 +24,7 @@ func newApp(id string) *App {
 }
 
 func (app *App) Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error){
-	// parse 
+	// parse query string and validate
 	var length = 5
 	lengthParam, ok := request.QueryStringParameters["length"]
 	if ok {
@@ -47,13 +47,25 @@ func (app *App) Handler(request events.APIGatewayProxyRequest) (events.APIGatewa
 		}, nil 
 	}
 
-	pieces := []string{}
-	for i := 0; i < length ; i++ {
-		pieces = append(pieces, w.WordList[rand.Int()%len(w.WordList)])
+	// generate unique random indexes we'll use to lookup words from the word list
+	// less secure than if we allow words more than once, but I prefer the aesthetic 🤣
+	uniqueRandomInts := make(map[int]bool)
+	for len(uniqueRandomInts) < length {
+		i := rand.Int() % len(w.WordList)
+        if !uniqueRandomInts[i] {
+            uniqueRandomInts[i] = true
+        }
 	}
 
+	// build the password and send it!
+	pieces := []string{}
+	for idx := range uniqueRandomInts {
+		pieces = append(pieces, w.WordList[idx])
+	}
+	result := strings.Join(pieces, "-")
+
 	responseBody := map[string]string{
-		"password": strings.Join(pieces, "-"),
+		"password": result,
 	} 
 
 	responseJson, err := json.Marshal(responseBody)
