@@ -9,7 +9,7 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "compile": "rm -r ./dist ; cd ./lambdas && GOARCH=arm64 GOOS=linux go build -tags lambda.norpc -o ../dist/bootstrap main.go",
+    "compile": "rm -r ./dist ; cd ./src/app && GOARCH=arm64 GOOS=linux go build -tags lambda.norpc -o ../../dist/bootstrap main.go",
     "destroy": "cdk destroy --force",
     "deploy": "pnpm compile && cdk deploy ---require-approval never"
   },

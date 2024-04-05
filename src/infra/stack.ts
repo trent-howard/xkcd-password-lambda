@@ -11,7 +11,7 @@ declare global {
     }
   }
 }
-export class CdkLambdaStack extends cdk.Stack {
+export class PasswordGeneratorStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
