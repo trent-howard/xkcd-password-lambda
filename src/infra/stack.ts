@@ -1,50 +1,69 @@
-import * as cdk from "aws-cdk-lib";
+import { Size, Stack, RemovalPolicy } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import { RestApi, LambdaIntegration } from "aws-cdk-lib/aws-apigateway";
+import {
+  RestApi,
+  LambdaIntegration,
+  Cors,
+  MethodLoggingLevel,
+  AccessLogFormat,
+  LogGroupLogDestination,
+} from "aws-cdk-lib/aws-apigateway";
+import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      API_KEY: string;
-      API_CLIENT: string;
-    }
-  }
-}
-export class PasswordGeneratorStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+export class PasswordGeneratorStack extends Stack {
+  constructor(scope: Construct, id: string) {
+    super(scope, id);
 
-    const myFunction = new lambda.Function(this, "XkcdPasswordGenerator", {
+    const logs = new LogGroup(this, `${id}-public-api-logs`, {
+      logGroupName: `${id}-public-api-logs`,
+      removalPolicy: RemovalPolicy.DESTROY,
+      retention: RetentionDays.ONE_WEEK,
+    });
+
+    const restApi = new RestApi(this, `${id}-public-api`, {
+      restApiName: `${id}-public-api`,
+      minCompressionSize: Size.bytes(0),
+      deployOptions: {
+        loggingLevel: MethodLoggingLevel.INFO,
+        accessLogFormat: AccessLogFormat.jsonWithStandardFields(),
+        accessLogDestination: new LogGroupLogDestination(logs),
+      },
+      defaultCorsPreflightOptions: {
+        allowOrigins: Cors.ALL_ORIGINS,
+        allowMethods: Cors.ALL_METHODS,
+        allowHeaders: Cors.DEFAULT_HEADERS,
+      },
+    });
+
+    const handler = new lambda.Function(this, `${id}-handler`, {
+      functionName: "xkcd-password-generator-handler",
       code: lambda.Code.fromAsset("dist"),
       handler: "bootstrap",
       runtime: lambda.Runtime.PROVIDED_AL2,
       architecture: lambda.Architecture.ARM_64,
     });
 
-    const gateway = new RestApi(this, "XkcdPasswordApi", {
-      defaultCorsPreflightOptions: {
-        allowOrigins: ["*"],
-        allowMethods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"],
-      },
+    const plan = restApi.addUsagePlan(`${id}-public-api-usage-plan`, {
+      apiStages: [{ api: restApi, stage: restApi.deploymentStage }],
     });
 
-    const plan = gateway.addUsagePlan("UsagePlan", {
-      apiStages: [{ api: gateway, stage: gateway.deploymentStage }],
-    });
-
-    const apiKey = gateway.addApiKey(process.env.API_CLIENT, {
-      apiKeyName: process.env.API_CLIENT,
-      value: process.env.API_KEY,
+    const apiKey = restApi.addApiKey(`${id}-public-api-key`, {
+      apiKeyName: `${id}-public-api-usage-plan`,
     });
 
     plan.addApiKey(apiKey);
 
-    const integration = new LambdaIntegration(myFunction);
-    const passwordRoute = gateway.root.addResource("password");
-    passwordRoute.addMethod("GET", integration, {
+    const integration = new LambdaIntegration(handler);
+
+    restApi.root.resourceForPath("/password").addMethod("GET", integration, {
       apiKeyRequired: true,
-      requestParameters: { "method.request.querystring.path": false },
+      requestParameters: {
+        "method.request.querystring.length": false,
+      },
+      requestValidatorOptions: {
+        validateRequestParameters: true,
+      },
     });
   }
 }
