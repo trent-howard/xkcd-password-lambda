@@ -23,28 +23,41 @@ func newApp(id string) *App {
 	}
 }
 
-func (app *App) Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error){
+type ErrorBody struct {
+	ErrorMsg string `json:"error,omitempty"`
+}
+
+func apiResponse(status int, body interface{}) (*events.APIGatewayProxyResponse, error) {
+	resp := events.APIGatewayProxyResponse{Headers: map[string]string{
+		"Content-Type":                     "application/json",
+		"Access-Control-Allow-Origin":      "*",
+		"Access-Control-Allow-Headers":     "Content-Type",
+		"Access-Control-Allow-Methods":     "GET",
+		"Access-Control-Allow-Credentials": "true",
+	}}
+	resp.StatusCode = status
+
+	stringBody, _ := json.Marshal(body)
+	resp.Body = string(stringBody)
+	return &resp, nil
+}
+
+func (app *App) Handler(request events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 	// parse query string and validate
 	var length = 5
 	lengthParam, ok := request.QueryStringParameters["length"]
 	if ok {
 		int, err := strconv.Atoi(lengthParam)
 		if err != nil {
-			return events.APIGatewayProxyResponse{
-				StatusCode: http.StatusBadRequest,
-				Headers: map[string]string{"Content-Type": "application/json"},
-				Body: `{"error": "length param must be a number"}`,
-			}, nil 
+			return apiResponse(http.StatusBadRequest,
+				ErrorBody{"length param must be a number"},
+			)
 		}
 		length = int
 	}
 
 	if length < 1 || length > 1000 {
-		return events.APIGatewayProxyResponse{
-			StatusCode: http.StatusBadRequest,
-			Headers: map[string]string{"Content-Type": "application/json"},
-			Body: `{"error": "length must be a number between 1 and 1000"}`,
-		}, nil 
+		return apiResponse(http.StatusBadRequest, ErrorBody{"length must be a number between 1 and 1000"})
 	}
 
 	// generate unique random indexes we'll use to lookup words from the word list
@@ -52,9 +65,9 @@ func (app *App) Handler(request events.APIGatewayProxyRequest) (events.APIGatewa
 	uniqueRandomInts := make(map[int]bool)
 	for len(uniqueRandomInts) < length {
 		i := rand.Int() % len(w.WordList)
-        if !uniqueRandomInts[i] {
-            uniqueRandomInts[i] = true
-        }
+		if !uniqueRandomInts[i] {
+			uniqueRandomInts[i] = true
+		}
 	}
 
 	// build the password and send it!
@@ -66,34 +79,13 @@ func (app *App) Handler(request events.APIGatewayProxyRequest) (events.APIGatewa
 
 	responseBody := map[string]string{
 		"password": result,
-	} 
+	}
 
-	responseJson, err := json.Marshal(responseBody)
-	if err != nil {
-		return events.APIGatewayProxyResponse{
-			StatusCode: http.StatusInternalServerError,
-			Headers: map[string]string{"Content-Type": "application/json"},
-			Body: `{"error": "internal server error"}`,
-		}, nil 
-	}
-	
-	response := events.APIGatewayProxyResponse{
-		Body: string(responseJson),
-		StatusCode: http.StatusOK,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Access-Control-Allow-Origin": "*",
-			"Access-Control-Allow-Headers": "Content-Type",
-			"Access-Control-Allow-Methods": "GET",
-			"Access-Control-Allow-Credentials": "true",
-		},
-	}
-	return response, nil
+	return apiResponse(http.StatusOK, responseBody)
 }
 
 func main() {
-	id:= "someRandomString"
-	app := newApp(id)
+	app := newApp("xkcd-password-gen")
 
 	lambda.Start(app.Handler)
 }
