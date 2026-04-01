@@ -40,7 +40,7 @@ export class PasswordGeneratorStack extends Stack {
       functionName: "xkcd-password-generator-handler",
       code: lambda.Code.fromAsset("dist"),
       handler: "bootstrap",
-      runtime: lambda.Runtime.PROVIDED_AL2,
+      runtime: lambda.Runtime.PROVIDED_AL2023,
       architecture: lambda.Architecture.ARM_64,
     });
 
